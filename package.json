@@ -1,0 +1,24 @@
+{
+  "name": "salary",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "?"
+  },
+  "license": "ISC",
+  "author": "Oleksandr Chernysh",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.0",
+    "chartjs-node-canvas": "^5.0.0",
+    "dotenv": "^17.2.2"
+  }
+}
