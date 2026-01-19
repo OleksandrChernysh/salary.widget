@@ -1,1 +1,5 @@
-*.png
+# Env files
+.env
+
+# Cache files
+.cache-widget.json

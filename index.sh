@@ -2,7 +2,8 @@
 # Wrapper to run Node.js salary tracker
 
 # Go into script folder
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
-# Run Node.js script
-/home/sasha/.nvm/versions/node/v24.8.0/bin/node ./index.mjs
+# Run widget script (outputs both daily and monthly)
+"$HOME/.nvm/versions/node/v24.13.0/bin/node" ./index.mjs

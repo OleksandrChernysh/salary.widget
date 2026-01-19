@@ -1,7 +1,6 @@
-// main.mjs
+// widget.mjs - Combined output for Übersicht widget (daily + monthly)
 import { exec } from "child_process";
 import util from "util";
-import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import fs from "fs";
 import dotenv from "dotenv";
 
@@ -12,34 +11,46 @@ const execAsync = util.promisify(exec);
 const HOURLY_RATE = parseFloat(process.env.HOURLY_RATE) || 7;
 const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE) || 41;
 const TOGGL_TOKEN = process.env.TOGGL_TOKEN;
-const SAVE_CHART = process.env.SAVE_CHART === "true"; // toggle chart saving
+const CACHE_FILE = ".cache-widget.json";
+const CACHE_TTL = 600000; // 10 minutes
 
-// Function to extract total time from Toggl output
-function parseTimeEntries(output) {
-  let totalSeconds = 0;
-  const regex = /(\d{1,2}):(\d{2}):(\d{2})/g;
-  let match;
-
-  while ((match = regex.exec(output)) !== null) {
-    const [_, h, m, s] = match;
-    totalSeconds += parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s);
+// Fetch time entries for a date range
+async function getTimeFromAPI(startDate, endDate) {
+  if (!TOGGL_TOKEN) {
+    return null;
   }
 
-  return totalSeconds;
-}
-
-// Function to fetch time data from Toggl
-async function getTogglTime(command) {
   try {
-    const { stdout } = await execAsync(command);
-    return parseTimeEntries(stdout);
+    const url = `https://api.track.toggl.com/api/v9/me/time_entries?start_date=${startDate}&end_date=${endDate}`;
+    const auth = Buffer.from(`${TOGGL_TOKEN}:api_token`).toString("base64");
+
+    const command = `curl -s -H "Authorization: Basic ${auth}" "${url}"`;
+    const { stdout, stderr } = await execAsync(command);
+
+    if (stderr && (stderr.includes("limit") || stderr.includes("quota"))) {
+      return null;
+    }
+
+    const entries = JSON.parse(stdout);
+    let totalSeconds = 0;
+
+    entries.forEach((entry) => {
+      if (entry.duration > 0) {
+        totalSeconds += entry.duration;
+      } else if (entry.duration < 0) {
+        const startTime = Math.abs(entry.duration);
+        const now = Math.floor(Date.now() / 1000);
+        totalSeconds += now - startTime;
+      }
+    });
+
+    return totalSeconds;
   } catch (err) {
-    console.error("Error running Toggl command:", err.message);
-    return 0;
+    return null;
   }
 }
 
-// Function to calculate earnings
+// Calculate earnings
 function calculateEarnings(timeInSeconds) {
   const hoursWorked = timeInSeconds / 3600;
   const earningsUsd = hoursWorked * HOURLY_RATE;
@@ -47,63 +58,105 @@ function calculateEarnings(timeInSeconds) {
   return { earningsUsd, earningsUah };
 }
 
-async function plotEarningsGraph(earningsToday) {
-  const MAX_HOURS = 4;
-  const HOURLY_RATE = parseFloat(process.env.HOURLY_RATE) || 7;
-  const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE) || 41;
+// Cache management
+function readCache() {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
+      const age = Date.now() - data.timestamp;
+      if (age < CACHE_TTL) {
+        return data;
+      }
+    }
+  } catch (err) {
+    // Ignore
+  }
+  return null;
+}
 
-  const maxEarningsUah = MAX_HOURS * HOURLY_RATE * EXCHANGE_RATE;
-  const remaining = Math.max(maxEarningsUah - earningsToday, 0);
-
-  const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 230, height: 230 });
-
-  const config = {
-    type: "doughnut",
-    data: {
-      labels: ["Earned", "Remaining"],
-      datasets: [
-        {
-          data: [earningsToday, remaining],
-          backgroundColor: ["green", "#e0e0e0"],
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      plugins: {
-        legend: { position: "bottom" },
-      },
-      cutout: "60%", // makes it a doughnut
-    },
-  };
-
-  const image = await chartJSNodeCanvas.renderToBuffer(config);
-  fs.writeFileSync("earnings.png", image);
+function writeCache(todayUsd, todayUah, monthUsd, monthUah) {
+  try {
+    fs.writeFileSync(
+      CACHE_FILE,
+      JSON.stringify({
+        timestamp: Date.now(),
+        todayUsd,
+        todayUah,
+        monthUsd,
+        monthUah,
+      }),
+    );
+  } catch (err) {
+    // Ignore
+  }
 }
 
 // Main function
 async function main() {
-  // Toggl auth
-  if (TOGGL_TOKEN) {
-    await execAsync(`toggl auth ${TOGGL_TOKEN}`);
+  // Check cache first
+  const cached = readCache();
+  if (cached) {
+    console.log(
+      `Today: ${cached.todayUsd.toFixed(2)} USD / ${cached.todayUah.toFixed(2)} UAH`,
+    );
+    console.log(
+      `Month: ${cached.monthUsd.toFixed(2)} USD / ${cached.monthUah.toFixed(2)} UAH`,
+    );
+    return;
   }
 
-  // Fetch today's work time
-  const timeToday = await getTogglTime("toggl current");
-  const { earningsUsd: earningsTodayUsd, earningsUah: earningsTodayUah } =
-    calculateEarnings(timeToday);
+  // Fetch today's time
+  const today = new Date();
+  const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+  const now = new Date().toISOString();
 
-  // Print earnings (Conky will read this)
-  console.log(
-    `Today: ${earningsTodayUsd.toFixed(2)} USD / ${earningsTodayUah.toFixed(
-      2
-    )} UAH`
-  );
+  const todaySeconds = await getTimeFromAPI(todayStart, now);
 
-  // Optionally save chart
-  if (SAVE_CHART) {
-    await plotEarningsGraph(earningsTodayUah);
+  // Fetch month's time
+  const monthStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1,
+  ).toISOString();
+
+  const monthSeconds = await getTimeFromAPI(monthStart, now);
+
+  // Handle rate limit
+  if (todaySeconds === null || monthSeconds === null) {
+    try {
+      if (fs.existsSync(CACHE_FILE)) {
+        const oldCache = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
+        const ageMinutes = Math.floor(
+          (Date.now() - oldCache.timestamp) / 60000,
+        );
+        console.log(`⚠️ Rate limited. Last known (${ageMinutes}m ago):`);
+        console.log(
+          `Today: ${oldCache.todayUsd.toFixed(2)} USD / ${oldCache.todayUah.toFixed(2)} UAH`,
+        );
+        console.log(
+          `Month: ${oldCache.monthUsd.toFixed(2)} USD / ${oldCache.monthUah.toFixed(2)} UAH`,
+        );
+        return;
+      }
+    } catch (err) {
+      // Ignore
+    }
+    console.log("Today: 0.00 USD / 0.00 UAH");
+    console.log("Month: 0.00 USD / 0.00 UAH");
+    return;
   }
+
+  const { earningsUsd: todayUsd, earningsUah: todayUah } =
+    calculateEarnings(todaySeconds);
+  const { earningsUsd: monthUsd, earningsUah: monthUah } =
+    calculateEarnings(monthSeconds);
+
+  // Save to cache
+  writeCache(todayUsd, todayUah, monthUsd, monthUah);
+
+  // Output for widget
+  console.log(`Today: ${todayUsd.toFixed(2)} USD / ${todayUah.toFixed(2)} UAH`);
+  console.log(`Month: ${monthUsd.toFixed(2)} USD / ${monthUah.toFixed(2)} UAH`);
 }
 
 main();
