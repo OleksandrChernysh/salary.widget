@@ -9,6 +9,7 @@ This repository contains an Übersicht widget that should be copied to:
 
 - 📊 **Dual Display**: Shows both today's and month-to-date earnings
 - 💰 **Multi-Currency**: Displays in USD and UAH simultaneously
+- 💱 **Real Exchange Rate**: Fetches current USD/UAH rate from National Bank of Ukraine API
 - ⚡ **Smart Caching**: 10-minute cache to respect Toggl's 30 req/hour API limit
 - 🎨 **Glassmorphic Design**: Modern translucent widget design
 - 🔄 **Auto-Refresh**: Updates every 2 minutes
@@ -65,7 +66,7 @@ This repository contains an Übersicht widget that should be copied to:
    ```env
    TOGGL_TOKEN=your_api_token_here
    HOURLY_RATE=7
-   EXCHANGE_RATE=42
+   # EXCHANGE_RATE=42  # Optional: override NBU API rate
    ```
 
 4. Copy the widget to Übersicht widgets directory:
@@ -84,7 +85,7 @@ Edit `.env` file:
 
 - `TOGGL_TOKEN` - Your Toggl API token (get from [toggl.com/app/profile](https://toggl.com/app/profile))
 - `HOURLY_RATE` - Your hourly rate in USD
-- `EXCHANGE_RATE` - USD to UAH exchange rate
+- `EXCHANGE_RATE` - (Optional) Override the NBU API exchange rate with a fixed value
 
 ## Usage
 
@@ -114,12 +115,15 @@ salary/
 
 ## Technical Details
 
-- **API**: Toggl API v9 (`/me/time_entries`)
+- **API**:
+  - Toggl API v9 (`/me/time_entries`)
+  - NBU (National Bank of Ukraine) API for real-time exchange rates
 - **Cache**: `.cache-widget.json` (auto-generated, 10-min TTL)
 - **Auth**: Basic authentication with API token
 - **Date Range**:
   - Today: Current day 00:00 to now
   - Month: First day of month 00:00 to now
+- **Exchange Rate**: Fetched from NBU API, falls back to `.env` value if unavailable
 
 ## Troubleshooting
 

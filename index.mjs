@@ -8,11 +8,31 @@ dotenv.config({ quiet: true });
 const execAsync = util.promisify(exec);
 
 // Constants from .env
-const HOURLY_RATE = parseFloat(process.env.HOURLY_RATE) || 7;
-const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE) || 41;
+const HOURLY_RATE = parseFloat(process.env.HOURLY_RATE);
 const TOGGL_TOKEN = process.env.TOGGL_TOKEN;
-const CACHE_FILE = ".cache-widget.json";
-const CACHE_TTL = 600000; // 10 minutes
+const CACHE_FILE = process.env.CACHE_FILE;
+const CACHE_TTL = parseInt(process.env.CACHE_TTL);
+const NBU_API_URL = process.env.NBU_API_URL;
+
+// Fetch exchange rate from NBU
+async function getExchangeRate() {
+  try {
+    const command = `curl -s "${NBU_API_URL}"`;
+    const { stdout, stderr } = await execAsync(command);
+
+    if (stderr) {
+      return null;
+    }
+
+    const data = JSON.parse(stdout);
+    if (Array.isArray(data) && data.length > 0 && data[0].rate) {
+      return data[0].rate;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
 
 // Fetch time entries for a date range
 async function getTimeFromAPI(startDate, endDate) {
@@ -51,10 +71,10 @@ async function getTimeFromAPI(startDate, endDate) {
 }
 
 // Calculate earnings
-function calculateEarnings(timeInSeconds) {
+function calculateEarnings(timeInSeconds, exchangeRate) {
   const hoursWorked = timeInSeconds / 3600;
   const earningsUsd = hoursWorked * HOURLY_RATE;
-  const earningsUah = earningsUsd * EXCHANGE_RATE;
+  const earningsUah = earningsUsd * exchangeRate;
   return { earningsUsd, earningsUah };
 }
 
@@ -74,7 +94,7 @@ function readCache() {
   return null;
 }
 
-function writeCache(todayUsd, todayUah, monthUsd, monthUah) {
+function writeCache(todayUsd, todayUah, monthUsd, monthUah, exchangeRate) {
   try {
     fs.writeFileSync(
       CACHE_FILE,
@@ -84,6 +104,7 @@ function writeCache(todayUsd, todayUah, monthUsd, monthUah) {
         todayUah,
         monthUsd,
         monthUah,
+        exchangeRate,
       }),
     );
   } catch (err) {
@@ -96,6 +117,11 @@ async function main() {
   // Check cache first
   const cached = readCache();
   if (cached) {
+    const displayRate =
+      cached.exchangeRate || parseFloat(process.env.EXCHANGE_RATE) || 41;
+    console.log(
+      `Rates: ${HOURLY_RATE.toFixed(2)} USD/hr | ${displayRate.toFixed(2)} UAH/USD`,
+    );
     console.log(
       `Today: ${cached.todayUsd.toFixed(2)} USD / ${cached.todayUah.toFixed(2)} UAH`,
     );
@@ -104,6 +130,13 @@ async function main() {
     );
     return;
   }
+
+  // Fetch exchange rate
+  const exchangeRate = await getExchangeRate();
+
+  // Fallback to env variable if API fails
+  const finalExchangeRate =
+    exchangeRate || parseFloat(process.env.EXCHANGE_RATE) || 41;
 
   // Fetch today's time
   const today = new Date();
@@ -146,15 +179,22 @@ async function main() {
     return;
   }
 
-  const { earningsUsd: todayUsd, earningsUah: todayUah } =
-    calculateEarnings(todaySeconds);
-  const { earningsUsd: monthUsd, earningsUah: monthUah } =
-    calculateEarnings(monthSeconds);
+  const { earningsUsd: todayUsd, earningsUah: todayUah } = calculateEarnings(
+    todaySeconds,
+    finalExchangeRate,
+  );
+  const { earningsUsd: monthUsd, earningsUah: monthUah } = calculateEarnings(
+    monthSeconds,
+    finalExchangeRate,
+  );
 
   // Save to cache
-  writeCache(todayUsd, todayUah, monthUsd, monthUah);
+  writeCache(todayUsd, todayUah, monthUsd, monthUah, finalExchangeRate);
 
   // Output for widget
+  console.log(
+    `Rates: ${HOURLY_RATE.toFixed(2)} USD/hr | ${finalExchangeRate.toFixed(2)} UAH/USD`,
+  );
   console.log(`Today: ${todayUsd.toFixed(2)} USD / ${todayUah.toFixed(2)} UAH`);
   console.log(`Month: ${monthUsd.toFixed(2)} USD / ${monthUah.toFixed(2)} UAH`);
 }
