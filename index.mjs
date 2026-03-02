@@ -60,7 +60,8 @@ async function getTimeFromAPI(startDate, endDate) {
       } else if (entry.duration < 0) {
         const startTime = Math.abs(entry.duration);
         const now = Math.floor(Date.now() / 1000);
-        totalSeconds += now - startTime;
+        const elapsed = now - startTime;
+        totalSeconds += elapsed;
       }
     });
 
