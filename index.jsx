@@ -1,5 +1,5 @@
 import { styles } from "./styles.mjs";
-export const refreshFrequency = 120000; // 2 minutes - respects Toggl's 30 req/hour free plan limit
+export const refreshFrequency = 1000; // 1 second - live timer updates (API syncs every 10 min)
 
 export const command = `"$HOME/Library/Application Support/Übersicht/widgets/salary.widget/index.sh" 2>&1`;
 

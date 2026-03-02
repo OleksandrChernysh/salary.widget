@@ -35,6 +35,7 @@ async function getExchangeRate() {
 }
 
 // Fetch time entries for a date range
+// Returns object with: { totalSeconds, completedSeconds, runningTimerStart }
 async function getTimeFromAPI(startDate, endDate) {
   if (!TOGGL_TOKEN) {
     return null;
@@ -52,20 +53,26 @@ async function getTimeFromAPI(startDate, endDate) {
     }
 
     const entries = JSON.parse(stdout);
-    let totalSeconds = 0;
+    let completedSeconds = 0;
+    let runningTimerStart = null;
 
     entries.forEach((entry) => {
       if (entry.duration > 0) {
-        totalSeconds += entry.duration;
+        completedSeconds += entry.duration;
       } else if (entry.duration < 0) {
-        const startTime = Math.abs(entry.duration);
-        const now = Math.floor(Date.now() / 1000);
-        const elapsed = now - startTime;
-        totalSeconds += elapsed;
+        // Running timer - store its start time
+        runningTimerStart = Math.abs(entry.duration);
       }
     });
 
-    return totalSeconds;
+    // Calculate total including running timer
+    let totalSeconds = completedSeconds;
+    if (runningTimerStart) {
+      const now = Math.floor(Date.now() / 1000);
+      totalSeconds += now - runningTimerStart;
+    }
+
+    return { totalSeconds, completedSeconds, runningTimerStart };
   } catch (err) {
     return null;
   }
@@ -79,13 +86,34 @@ function calculateEarnings(timeInSeconds, exchangeRate) {
   return { earningsUsd, earningsUah };
 }
 
-// Cache management
+// Cache management - reads and calculates live time if timer is running
 function readCache() {
   try {
     if (fs.existsSync(CACHE_FILE)) {
       const data = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
       const age = Date.now() - data.timestamp;
       if (age < CACHE_TTL) {
+        // If there's a running timer, calculate additional time since last sync
+        if (data.runningTimerStart) {
+          const now = Math.floor(Date.now() / 1000);
+          const additionalSeconds = now - data.runningTimerStart;
+
+          const todaySeconds = data.todayCompletedSeconds + additionalSeconds;
+          const monthSeconds = data.monthCompletedSeconds + additionalSeconds;
+
+          const { earningsUsd: todayUsd, earningsUah: todayUah } =
+            calculateEarnings(todaySeconds, data.exchangeRate);
+          const { earningsUsd: monthUsd, earningsUah: monthUah } =
+            calculateEarnings(monthSeconds, data.exchangeRate);
+
+          return {
+            ...data,
+            todayUsd,
+            todayUah,
+            monthUsd,
+            monthUah,
+          };
+        }
         return data;
       }
     }
@@ -95,7 +123,16 @@ function readCache() {
   return null;
 }
 
-function writeCache(todayUsd, todayUah, monthUsd, monthUah, exchangeRate) {
+function writeCache(
+  todayUsd,
+  todayUah,
+  monthUsd,
+  monthUah,
+  exchangeRate,
+  todayCompletedSeconds,
+  monthCompletedSeconds,
+  runningTimerStart,
+) {
   try {
     fs.writeFileSync(
       CACHE_FILE,
@@ -106,6 +143,9 @@ function writeCache(todayUsd, todayUah, monthUsd, monthUah, exchangeRate) {
         monthUsd,
         monthUah,
         exchangeRate,
+        todayCompletedSeconds,
+        monthCompletedSeconds,
+        runningTimerStart,
       }),
     );
   } catch (err) {
@@ -144,7 +184,7 @@ async function main() {
   const todayStart = new Date(today.setHours(0, 0, 0, 0)).toISOString();
   const now = new Date().toISOString();
 
-  const todaySeconds = await getTimeFromAPI(todayStart, now);
+  const todayData = await getTimeFromAPI(todayStart, now);
 
   // Fetch month's time
   const monthStart = new Date(
@@ -153,10 +193,10 @@ async function main() {
     1,
   ).toISOString();
 
-  const monthSeconds = await getTimeFromAPI(monthStart, now);
+  const monthData = await getTimeFromAPI(monthStart, now);
 
   // Handle rate limit
-  if (todaySeconds === null || monthSeconds === null) {
+  if (todayData === null || monthData === null) {
     try {
       if (fs.existsSync(CACHE_FILE)) {
         const oldCache = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
@@ -181,16 +221,25 @@ async function main() {
   }
 
   const { earningsUsd: todayUsd, earningsUah: todayUah } = calculateEarnings(
-    todaySeconds,
+    todayData.totalSeconds,
     finalExchangeRate,
   );
   const { earningsUsd: monthUsd, earningsUah: monthUah } = calculateEarnings(
-    monthSeconds,
+    monthData.totalSeconds,
     finalExchangeRate,
   );
 
-  // Save to cache
-  writeCache(todayUsd, todayUah, monthUsd, monthUah, finalExchangeRate);
+  // Save to cache with running timer info
+  writeCache(
+    todayUsd,
+    todayUah,
+    monthUsd,
+    monthUah,
+    finalExchangeRate,
+    todayData.completedSeconds,
+    monthData.completedSeconds,
+    todayData.runningTimerStart,
+  );
 
   // Output for widget
   console.log(
