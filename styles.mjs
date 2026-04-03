@@ -15,17 +15,17 @@ export const styles = `
   .glass-card {
     --glass-bg: linear-gradient(
       135deg,
-      rgba(25, 45, 125, 0.82) 0%,
-      rgba(55, 39, 137, 0.8) 52%,
-      rgba(94, 47, 160, 0.76) 100%
+      rgba(25, 45, 125, 0.62) 0%,
+      rgba(55, 39, 137, 0.58) 52%,
+      rgba(94, 47, 160, 0.54) 100%
     );
-    --glass-border: rgba(170, 182, 255, 0.35);
-    --glass-shadow-inset: rgba(196, 204, 255, 0.4);
-    --glass-shadow-outer: rgba(16, 20, 58, 0.32);
-    --text-primary: rgba(228, 165, 72, 0.95);
-    --text-secondary: rgba(228, 165, 72, 0.9);
-    --text-muted: rgba(228, 165, 72, 0.75);
-    --text-subtle: rgba(228, 165, 72, 0.65);
+    --glass-border: rgba(170, 182, 255, 0.22);
+    --glass-shadow-inset: rgba(196, 204, 255, 0.24);
+    --glass-shadow-outer: rgba(16, 20, 58, 0.2);
+    --text-primary: rgba(246, 249, 255, 0.96);
+    --text-secondary: rgba(240, 245, 255, 0.9);
+    --text-muted: rgba(232, 238, 252, 0.76);
+    --text-subtle: rgba(224, 232, 248, 0.66);
 
     width: 300px;
     padding: 27px 20px;
@@ -49,7 +49,7 @@ export const styles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 100;
     color: var(--text-muted);
   }
@@ -75,24 +75,23 @@ export const styles = `
   }
 
   .amount-text {
-    font-size: 1.5rem;
-    font-weight: 300;
+    font-size: 1.7rem;
+    font-weight: 400;
     letter-spacing: -1px;
     color: var(--text-primary);
     margin-right: 4px;
   }
 
   .currency-text {
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     font-weight: 100;
     color: var(--text-subtle);
   }
 
   .period-label {
-    font-size: 0.75rem;
-    font-weight: 100;
+    font-size: 0.65rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--text-muted);
     opacity: 0.9;
   }
