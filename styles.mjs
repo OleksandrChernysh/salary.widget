@@ -1,3 +1,7 @@
+import { activeTheme } from "./themes.mjs";
+
+const { glassCard } = activeTheme;
+
 export const styles = `
   /* Position variables */
   --widget-bottom: 50px;
@@ -13,19 +17,13 @@ export const styles = `
 
   /* Design tokens on the main card scope */
   .glass-card {
-    --glass-bg: linear-gradient(
-      135deg,
-      rgba(25, 45, 125, 0.62) 0%,
-      rgba(55, 39, 137, 0.58) 52%,
-      rgba(94, 47, 160, 0.54) 100%
-    );
-    --glass-border: rgba(170, 182, 255, 0.22);
-    --glass-shadow-inset: rgba(196, 204, 255, 0.24);
-    --glass-shadow-outer: rgba(16, 20, 58, 0.2);
-    --text-primary: rgba(246, 249, 255, 0.96);
-    --text-secondary: rgba(240, 245, 255, 0.9);
-    --text-muted: rgba(232, 238, 252, 0.76);
-    --text-subtle: rgba(224, 232, 248, 0.66);
+    --glass-bg: ${glassCard.glassBg};
+    --glass-border: ${glassCard.glassBorder};
+    --glass-shadow-inset: ${glassCard.glassShadowInset};
+    --text-primary: ${glassCard.textPrimary};
+    --text-secondary: ${glassCard.textSecondary};
+    --text-muted: ${glassCard.textMuted};
+    --text-subtle: ${glassCard.textSubtle};
 
     width: 300px;
     padding: 27px 20px;
@@ -33,10 +31,13 @@ export const styles = `
 
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
+    backdrop-filter: ${glassCard.backdropFilter};
+    -webkit-backdrop-filter: ${glassCard.backdropFilter};
 
     box-shadow:
       inset 0 1px 0 var(--glass-shadow-inset),
-      0 8px 32px var(--glass-shadow-outer);
+      ${glassCard.extraInsetShadow},
+      ${glassCard.outerShadow};
 
     color: var(--text-primary);
 
@@ -55,6 +56,7 @@ export const styles = `
   }
 
   .rates-info {
+    flex: 0 0 43%;
     font-size: 0.75rem;
     display: flex;
     align-items: center;
@@ -62,6 +64,7 @@ export const styles = `
   }
 
   .title-group {
+    flex: 0 0 50%;
     display: flex;
     align-items: center;
     gap: 8px;
