@@ -41,7 +41,26 @@ export const themes = {
       outerShadow: "0 16px 42px rgba(94, 45, 18, 0.28)",
     },
   },
+  earthSatellite: {
+    name: "salary-widget-earth-satellite",
+    description:
+      "A dark, atmospheric theme inspired by the satellite view of Earth at night. Deep space/ocean blues with glowing city lights gold accents.",
+    glassCard: {
+      glassBg:
+        "radial-gradient(circle at 10% 10%, rgba(20, 80, 220, 0.42) 0%, rgba(8, 20, 60, 0.78) 55%, rgba(2, 6, 20, 0.92) 100%)",
+      glassBorder: "rgba(100, 160, 255, 0.25)",
+      glassShadowInset: "rgba(140, 192, 255, 0.22)",
+      glassShadowOuter: "rgba(1, 4, 16, 0.5)",
+      textPrimary: "rgba(173, 179, 195, 0.96)",
+      textSecondary: "rgba(240, 246, 255, 0.95)",
+      textMuted: "rgba(178, 204, 255, 0.8)",
+      textSubtle: "rgba(142, 178, 250, 0.68)",
+      backdropFilter: "blur(20px) saturate(135%)",
+      extraInsetShadow: "inset 0 -12px 24px rgba(255, 255, 255, 0.03), inset 0 12px 24px rgba(20, 80, 220, 0.1)",
+      outerShadow: "0 16px 42px rgba(1, 4, 16, 0.55)",
+    },
+  },
 };
 
-export const activeThemeName = "liquidGlass";
+export const activeThemeName = "earthSatellite";
 export const activeTheme = themes[activeThemeName];
