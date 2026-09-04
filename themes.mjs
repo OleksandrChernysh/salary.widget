@@ -60,7 +60,28 @@ export const themes = {
       outerShadow: "0 16px 42px rgba(1, 4, 16, 0.55)",
     },
   },
+  teaGardens: {
+    name: "salary-widget-tea-gardens",
+    description:
+      "Inspired by macOS Tea Gardens Day wallpaper: lush misty green hills, deep emerald tea terraces, and dewy morning light accents.",
+    glassCard: {
+      glassBg:
+        "radial-gradient(circle at 18% 15%, rgba(132, 218, 166, 0.28) 0%, rgba(26, 74, 45, 0.62) 48%, rgba(7, 24, 15, 0.88) 100%)",
+      glassBorder: "rgba(180, 235, 205, 0.28)",
+      glassShadowInset: "rgba(215, 252, 230, 0.28)",
+      glassShadowOuter: "rgba(3, 16, 9, 0.55)",
+      textPrimary: "rgba(242, 252, 246, 0.98)",
+      textSecondary: "rgba(202, 245, 218, 0.94)",
+      textMuted: "rgba(164, 214, 185, 0.82)",
+      textSubtle: "rgba(132, 186, 158, 0.70)",
+      backdropFilter: "blur(20px) saturate(145%)",
+      extraInsetShadow:
+        "inset 0 -12px 24px rgba(0, 0, 0, 0.22), inset 0 12px 20px rgba(120, 220, 150, 0.12)",
+      outerShadow: "0 16px 42px rgba(3, 16, 9, 0.52)",
+    },
+  },
 };
 
-export const activeThemeName = "earthSatellite";
+export const activeThemeName = "teaGardens";
 export const activeTheme = themes[activeThemeName];
+
