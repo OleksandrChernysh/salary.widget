@@ -1,9 +1,72 @@
 import { styles } from "./styles.mjs";
-export const refreshFrequency = 1000; // 1 second - live timer updates (API syncs every 10 min)
+export const refreshFrequency = 40; // 40ms for sub-frame response synchronization
 
 export const command = `"$HOME/Library/Application Support/Übersicht/widgets/salary.widget/index.sh" 2>&1`;
 
 export const className = styles;
+
+let cachedData = {
+  today: { usd: "0.00", uah: "0.00" },
+  month: { usd: "0.00", uah: "0.00" },
+  hourlyRate: "0.00",
+  exchangeRate: "0.00",
+  isRateLimited: false,
+};
+
+// Parse output with both daily and monthly stats
+const parseOutput = (text) => {
+  if (!text) {
+    return {
+      today: { usd: "0.00", uah: "0.00" },
+      month: { usd: "0.00", uah: "0.00" },
+      hourlyRate: "0.00",
+      exchangeRate: "0.00",
+      isRateLimited: false,
+    };
+  }
+
+  const isRateLimited = text.includes("Rate limited");
+  const lines = text.split("\n");
+
+  let todayUsd = "0.00",
+    todayUah = "0.00";
+  let monthUsd = "0.00",
+    monthUah = "0.00";
+  let hourlyRate = "0.00",
+    exchangeRate = "0.00";
+
+  lines.forEach((line) => {
+    if (line.includes("Rates:")) {
+      const match = line.match(
+        /([\d.]+)\s*USD\/hr\s*\|\s*([\d.]+)\s*UAH\/USD/,
+      );
+      if (match) {
+        hourlyRate = match[1];
+        exchangeRate = match[2];
+      }
+    } else if (line.includes("Today:")) {
+      const match = line.match(/([\d.]+)\s*USD\s*\/\s*([\d.]+)\s*UAH/);
+      if (match) {
+        todayUsd = match[1];
+        todayUah = match[2];
+      }
+    } else if (line.includes("Month:")) {
+      const match = line.match(/([\d.]+)\s*USD\s*\/\s*([\d.]+)\s*UAH/);
+      if (match) {
+        monthUsd = match[1];
+        monthUah = match[2];
+      }
+    }
+  });
+
+  return {
+    today: { usd: todayUsd, uah: todayUah },
+    month: { usd: monthUsd, uah: monthUah },
+    hourlyRate,
+    exchangeRate,
+    isRateLimited,
+  };
+};
 
 export const render = ({ output, error }) => {
   // Debug: show errors or raw output if something goes wrong
@@ -11,67 +74,17 @@ export const render = ({ output, error }) => {
     return <div className="error-box">Error: {error}</div>;
   }
 
-  // Parse output with both daily and monthly stats
-  const parseOutput = (text) => {
-    if (!text) {
-      return {
-        today: { usd: "0.00", uah: "0.00" },
-        month: { usd: "0.00", uah: "0.00" },
-        hourlyRate: "0.00",
-        exchangeRate: "0.00",
-        isRateLimited: false,
-      };
-    }
+  const isHidden = output && output.includes("StageManager: 1");
 
-    const isRateLimited = text.includes("Rate limited");
-    const lines = text.split("\n");
+  if (!isHidden && output) {
+    cachedData = parseOutput(output);
+  }
 
-    let todayUsd = "0.00",
-      todayUah = "0.00";
-    let monthUsd = "0.00",
-      monthUah = "0.00";
-    let hourlyRate = "0.00",
-      exchangeRate = "0.00";
-
-    lines.forEach((line) => {
-      if (line.includes("Rates:")) {
-        const match = line.match(
-          /([\d.]+)\s*USD\/hr\s*\|\s*([\d.]+)\s*UAH\/USD/,
-        );
-        if (match) {
-          hourlyRate = match[1];
-          exchangeRate = match[2];
-        }
-      } else if (line.includes("Today:")) {
-        const match = line.match(/([\d.]+)\s*USD\s*\/\s*([\d.]+)\s*UAH/);
-        if (match) {
-          todayUsd = match[1];
-          todayUah = match[2];
-        }
-      } else if (line.includes("Month:")) {
-        const match = line.match(/([\d.]+)\s*USD\s*\/\s*([\d.]+)\s*UAH/);
-        if (match) {
-          monthUsd = match[1];
-          monthUah = match[2];
-        }
-      }
-    });
-
-    return {
-      today: { usd: todayUsd, uah: todayUah },
-      month: { usd: monthUsd, uah: monthUah },
-      hourlyRate,
-      exchangeRate,
-      isRateLimited,
-    };
-  };
-
-  const { today, month, hourlyRate, exchangeRate, isRateLimited } =
-    parseOutput(output);
+  const { today, month, hourlyRate, exchangeRate, isRateLimited } = cachedData;
 
   return (
     <div>
-      <div className="glass-card">
+      <div className={`glass-card ${isHidden ? "glass-card--hidden" : ""}`}>
         <div className="header-row">
           <div className="title-group">Earnings</div>
           <div className="rates-info">

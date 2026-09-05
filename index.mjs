@@ -1,4 +1,3 @@
-// widget.mjs - Combined output for Übersicht widget (daily + monthly)
 import { exec } from "child_process";
 import util from "util";
 import fs from "fs";

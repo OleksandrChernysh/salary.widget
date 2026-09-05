@@ -1,5 +1,15 @@
+# Dependencies
+node_modules/
+
 # Env files
 .env
+.env.local
 
 # Cache files
 .cache-widget.json
+
+# Binaries
+check-stage
+
+# macOS
+.DS_Store

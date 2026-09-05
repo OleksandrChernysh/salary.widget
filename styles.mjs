@@ -44,6 +44,22 @@ export const styles = `
     display: flex;
     flex-direction: column;
     gap: 14px;
+
+    transition: 
+      opacity 0.37s cubic-bezier(0.16, 1, 0.3, 1), 
+      transform 0.37s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.37s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+    will-change: opacity, transform, filter;
+  }
+
+  .glass-card--hidden {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+    filter: blur(8px);
+    pointer-events: none;
   }
 
   .header-row {
