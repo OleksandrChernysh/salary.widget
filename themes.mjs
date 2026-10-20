@@ -1,8 +1,8 @@
 export const themes = {
-  current: {
-    name: "salary-widget-current-theme",
+  coolGlass: {
+    name: "salary-widget-cool-glass",
     description:
-      "Snapshot of the original cool-toned glass theme before the warm liquid-glass refresh.",
+      "Cool-toned glassmorphism theme featuring deep indigo and violet gradients with crisp icy-white accents.",
     glassCard: {
       glassBg:
         "linear-gradient(135deg, rgba(25, 45, 125, 0.62) 0%, rgba(55, 39, 137, 0.58) 52%, rgba(94, 47, 160, 0.54) 100%)",
@@ -80,8 +80,26 @@ export const themes = {
       outerShadow: "0 16px 42px rgba(3, 16, 9, 0.52)",
     },
   },
+  transparent: {
+    name: "salary-widget-transparent",
+    description:
+      "Minimalist transparent glass theme with pure white and semi-white typography.",
+    glassCard: {
+      glassBg:
+        "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
+      glassBorder: "rgba(255, 255, 255, 0.14)",
+      glassShadowInset: "rgba(255, 255, 255, 0.20)",
+      glassShadowOuter: "rgba(0, 0, 0, 0.25)",
+      textPrimary: "rgba(255, 255, 255, 0.98)",
+      textSecondary: "rgba(255, 255, 255, 0.88)",
+      textMuted: "rgba(255, 255, 255, 0.68)",
+      textSubtle: "rgba(255, 255, 255, 0.50)",
+      backdropFilter: "blur(18px) saturate(125%)",
+      extraInsetShadow: "inset 0 -10px 20px rgba(255, 255, 255, 0.02)",
+      outerShadow: "0 12px 36px rgba(0, 0, 0, 0.22)",
+    },
+  },
 };
 
-export const activeThemeName = "teaGardens";
+export const activeThemeName = "transparent";
 export const activeTheme = themes[activeThemeName];
-
